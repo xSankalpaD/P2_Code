@@ -1,21 +1,37 @@
-import random
+﻿
+import random 
 
 import time
 
+cage_ID= None 
+color= None 
+size= None
+red_bin= False
+green_bin= False
+blue_bin= False
+cageID_list = [1,2,3,4,5,6]
 
-cage_ID = random.randint(1,6) #generate  random container
-def pick_up(cage_ID):
-    arm.home()
-    arm.spawn_cage(cage_ID)
-    arm.move_arm(0.574, 0.076, 0.044)
+#This function spawns in a random container from a list of predetermined container id's, then removes the selected cage id from the list 
+def spawn(): #sean
+    global cage_ID
+    global cageID_list
+    index= random.randint(0, len(cageID_list)-1) #assigns index a random value between 0 and 5, corresponding to the indexes of the list cage ID = cageID_list [index] #selects cage ID from a random number from the cage ID list
+    cage_ID= arm.spawn_cage (cage_ID) #spawns the selected cage id
+    cageID_list.remove (cageID_list [index]) #removes the cage ID that has already been spawned from the list return None
+    return none
+
+#this function picks up the container
+def pickup(): #sean
+    arm.move_arm (0.574, 0.076, 0.044) #moves arm to pickup location
     time.sleep(2)
-    if cage_ID< 4:
-        arm.control_gripper(40)
-    elif cage_ID >3:
-        arm.control_gripper(30)
+    if cage_ID<=3: #conditional to determine the value of final gripper position 
+        arm.control_gripper (40)
+    elif cage_ID>3: #conditional to determine the value of the final gripper psoition 
+        arm.control_gripper (30)
     time.sleep(2)
-    arm.move_arm(0.406, 0.0, 0.483)
+    arm.move_arm (0.406, 0.0, 0.483) #move arm to the home position
     time.sleep(2)
+    return None
 
 def rotate_base(cage_ID):
     check = True
@@ -44,74 +60,117 @@ def rotate_base(cage_ID):
             check= False        
             return True 
 
-def drop_off(cage_ID, command, threshold):  #the argument command considers if the autoclave drawer is open or closed
-    matchFlag=True 
-    while matchFlag==True:
-        location_small_autoclaves=[[-0.6022, 0.2433, 0.4393], [0.0, -0.6495, 0.4394], [0.0, 0.6495, 0.4394]] #list of all the coordinates for the small autoclaves
-        location_large_autoclaves=[[-0.404, 0.156, 0.2], [0.0, -0.383, 0.15], [0.0, 0.389, 0.15]] #list of all the coordinates for the large autoclaves
-        if potentiometer.left() > threshold and potentiometer.left()< 1.0 and cage_ID<4:    #if the left potentiometer is greater than the threshold and less than 100%, find the bin location from the list and move the q arm to the container drop off point
-            bin_location= location_small_autoclaves[cage_ID-1]
-            arm.move_arm(bin_location[0], bin_location[1], bin_location[2])
-            time.sleep(1)
-            arm.control_gripper(-30)
-            matchFlag= False    #exit the loop
-            return True     #return true value so the loop can contirnue when the function is called the next time 
-        elif potentiometer.left()==1.0 and command==1 and cage_ID >3:   #if the left potentiometer is 100% and if the drawer needs to be opened, find the drop off point in the list and send the q arm to the location
-            bin_location=location_large_autoclaves[cage_ID-4]
-            arm.activate_autoclaves()
-            time.sleep(3)
-            if cage_ID==4:  
-                arm.open_autoclave("red")
-                arm.move_arm(bin_location[0], bin_location[1], bin_location[2])
-                time.sleep(2)
-                arm.control_gripper(-30)
-                matchFlag= False    
-                return True 
-            elif cage_ID ==5:
-                arm.open_autoclave("green")
-                arm.move_arm(bin_location[0], bin_location[1], bin_location[2])
-                time.sleep(2)
-                arm.control_gripper(-30)
-                matchFlag= False    
-                return True 
-            elif cage_ID==6:
-                arm.open_autoclave("blue")
-                arm.move_arm(bin_location[0], bin_location[1], bin_location[2])
-                time.sleep(2)
-                arm.control_gripper(-30)
-                matchFlag= False    
-                return True 
-        elif command ==0:   #if the drawer needs to be closed, command is set to zero
-            if cage_ID==4:
-                arm.open_autoclave("red", False)
-                matchFlag= False
-                return True 
-            elif cage_ID ==5:
-                arm.open_autoclave("green", False)
-                matchFlag= False
-                return True 
-            elif cage_ID ==6:
-                arm.open_autoclave("blue", False)
-                matchFlag= False
-                return True 
+#This function drops off the container at its specific drop off location
+def dropoff(): #sarah
+    global size
+    global color
+    global cage_ID
+    global red_bin
+    global green_bin
+    global blue_bin
+    while potentiometer.left() == 0.5:
+        time.sleep(1)
+    pot_val= potentiometer.left()
 
-def continue_terminate():
+    if (pot_val> 0.5): #if left potentiometer value is greater than 50%, place the container in the autoclave drawer 
+        size = 'big'
+
+    elif (pot_val< 0.5): #if the left potentiomter value is less than 50%, place the container on top of the autoclave 
+        size = 'small'
+
+    if color=='red' and size=='small': #case 1
+        arm.move_arm(-0.628,0.254,0.32) #moves arm to predetermined [x, y, z] coordinates
+
+    elif color=='green' and size=='small': #case 2
+        arm.move_arm (0.0, -0.600,0.32) #moves arm to predetermined [x, y, z] coordinates
+
+    elif color=='blue' and size=='small': #case 3
+        arm.move_arm (0.0,0.600,0.32) #moves arm to predetermined [x, y, z] coordinates
+        
+    elif color=='red' and size=='big': #case 4
+        arm.open_autoclave ('red')
+        red_bin = True #assigns the bin a value corresponding to it's drawer position drawer open = true 
+        arm.move_arm (-0.404, 0.156, 0.2) #moves arm to predetermined [x, y, z] coordinates
+
+    elif color== 'green' and size== 'big': #case 5
+        arm.open_autoclave ('green')
+        green_bin= True #assigns the bin a value corresponding to it's drawer position drawer open = true 
+        arm.move_arm (0.0, -0.383, 0.15) #moves arm to predetermined [x, y, z] coordinates
+
+    elif color== 'blue' and size== 'big': #case 6
+        arm.open_autoclave ('blue')
+        blue_bin = True #assigns the bin a value corresponding to it's drawer position drawer open = true 
+        arm.move_arm (0.0, 0.389, 0.15) #moves arm to predetermined [x, y, z] coordinates
+        
+        
+    time.sleep(3)
+
+    #once the contianer is dropped off, release the gripper
+    if cage_ID<=3:
+        arm.control_gripper (-40)
+    elif cage_ID>3:
+        arm.control_gripper (-30)
+    time.sleep(3)
     arm.home()
-    threshold=0.6 #threshold for the left potentiometer
-    for num in range(6): #for the range of 6 autoclave containers, pick up, rotate the q arm base, and drop off the container.
-        cage_ID= random.randint(1,6)
-        pick_up(cage_ID)
-        time.sleep(2)
-        rotate_base(cage_ID)
-        time.sleep(2)
-        drop_off(cage_ID, 1, threshold) 
-        time.sleep(2)
-        arm.home()
-        print("Change potentiometer to 50") #reset the potentiometer so it can be used again
-        time.sleep(10)
-        if cage_ID>3:
-            drop_off(cage_ID, 0, threshold)
-            time.sleep(2)
-    print("All containers have been sorted")
-continue_terminate()
     
+    return None
+
+
+#this function relates movement of right potentiometer to rotation of the base of the q arm, stopping when within range of the correct autoclave 
+def rotate_base(): #sean 
+    global cage_ID
+    global color
+    if cage_ID == 1 or cage_ID == 4: #assigns the selected cage ID a colour
+        color= 'red'
+    elif cage_ID == 2 or cage_ID == 5: #assigns the selected cage ID a colour 
+        color= 'green'
+    elif cage_ID == 3 or cage_ID==6: #assigns the selected cage ID a colour
+        color= 'blue'
+    initial= 0.5 #inital position is when the right potentiometer is at 50%
+    while arm.check_autoclave (color) == False: #while the arm is not close to its assigned autoclave drawer, continue rotating the base
+        final1= potentiometer. right () #final
+        change= float (final1- initial) #assigns change a value equal to the difference between the final and inital potentiometer values 
+        angle=change*350 #converts change to an angle
+        
+        arm.rotate_base (angle) #rotates the arm by predetermiend angle
+        initial =final1 #the final position becomes the intial position for when the while loop restarts
+    return None
+
+#This function closes the autoclave drawer if the container is big
+def close_bin(): #sarah
+    global red_bin
+    global green_bin
+    global blue_bin
+    if red_bin == True:
+        arm.open_autoclave ('red', False)
+        red_bin= False
+    elif green_bin == True:
+        arm.open_autoclave ('green', False) 
+        green_bin= False
+    elif blue_bin == True:
+        arm.open_autoclave ('blue', False) 
+        blue_bin=False
+    return None
+
+
+#This function combines and calls all the functions with breaks inbetween 
+def main(): #sarah
+    arm.home ()
+    for i in range (6): #loop runs for all six contianers
+        spawn()
+        time.sleep (3)
+        pickup()
+        time.sleep(3) 
+        rotate_base ()
+        time.sleep(3)
+        dropoff()
+        time.sleep(3) 
+        close_bin() 
+        time.sleep (3) 
+        arm.home()
+
+arm.activate_autoclaves () #activates autoclaves
+main ()
+arm.deactivate_autoclaves () #deactivates the autoclaves
+
+
